@@ -1,0 +1,5 @@
+name: sb-actions
+description: sb monorepo
+
+github:
+  visibility: private

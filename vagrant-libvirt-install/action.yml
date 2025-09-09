@@ -1,0 +1,73 @@
+name: vagrant-libvirt-install
+description: install vagrant, libvirt, and qemu for testing ansible against VMs
+author: sudoblockio
+
+inputs:
+  vagrant-default-provider:
+    description: "Vagrant provider"
+    required: false
+    default: "libvirt"
+  libvirt-uri:
+    description: "LIBVIRT_DEFAULT_URI"
+    required: false
+    default: "qemu:///system"
+
+outputs:
+  vagrant-version:
+    description: "Installed Vagrant version"
+    value: ${{ steps.versions.outputs.vagrant_version }}
+  libvirt-version:
+    description: "Installed libvirt version"
+    value: ${{ steps.versions.outputs.libvirt_version }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install libvirt/qemu + build deps
+      shell: bash
+      run: |
+        set -euxo pipefail
+        sudo apt-get update
+        sudo apt-get install -y \
+          qemu-system-x86 qemu-utils \
+          libvirt-daemon-system libvirt-clients \
+          dnsmasq-base ebtables bridge-utils \
+          libvirt-dev ruby-dev build-essential pkg-config acl
+        sudo systemctl enable --now libvirtd
+        me="$(whoami)"
+        sudo setfacl -m u:${me}:rw /var/run/libvirt/libvirt-sock || true
+        sudo setfacl -m u:${me}:rw /var/run/libvirt/libvirt-sock-ro || true
+
+    - name: Install Vagrant
+      shell: bash
+      run: |
+        set -euxo pipefail
+        curl -fsSL https://apt.releases.hashicorp.com/gpg \
+          | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+        echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" \
+          | sudo tee /etc/apt/sources.list.d/hashicorp.list
+        sudo apt-get update
+        sudo apt-get install -y vagrant
+
+    - name: Install vagrant-libvirt
+      shell: bash
+      env:
+        CONFIGURE_ARGS: "with-libvirt-include=/usr/include/libvirt with-libvirt-lib=/usr/lib/x86_64-linux-gnu"
+      run: |
+        set -euxo pipefail
+        vagrant plugin install vagrant-libvirt
+
+    - name: Export environment to job
+      shell: bash
+      run: |
+        echo "VAGRANT_DEFAULT_PROVIDER=${{ inputs.vagrant-default-provider }}" >> "$GITHUB_ENV"
+        echo "LIBVIRT_DEFAULT_URI=${{ inputs.libvirt-uri }}" >> "$GITHUB_ENV"
+
+    - name: Detect versions
+      id: versions
+      shell: bash
+      run: |
+        set -euo pipefail
+        echo "vagrant_version=$(vagrant --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+        # virsh --version prints just a number
+        echo "libvirt_version=$(virsh --version)" >> "$GITHUB_OUTPUT"
