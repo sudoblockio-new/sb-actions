@@ -16,7 +16,7 @@ jobs:
     steps:
       - name: Install vagrant/libvirt from org action
         id: libvirt
-        uses: sudoblockio-new/sb-actions/actions/vagrant-libvirt-install@v1
+        uses: sudoblockio-new/sb-actions/actions/vagrant-libvirt-install@main
         with:
           vagrant-default-provider: libvirt
           libvirt-uri: qemu:///system
