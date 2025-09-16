@@ -1,5 +1,5 @@
 name: sb-actions
-description: sb monorepo
+description: sb monorepo's github actions
 
 github:
   visibility: public

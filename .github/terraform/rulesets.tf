@@ -20,7 +20,7 @@ resource "github_repository_ruleset" "prevent_non_bot_merge" {
 
   bypass_actors {
     actor_type  = "RepositoryRole"
-    actor_id    = 5 # Admin
+    actor_id    = 5  # Admin
     bypass_mode = "always"
   }
 }
