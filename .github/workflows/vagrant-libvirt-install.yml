@@ -1,0 +1,27 @@
+name: libvirt-setup
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - vagrant-libvirt-install/**
+      - .github/workflows/vagrant-libvirt-install.yaml
+
+jobs:
+  setup:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+    steps:
+      - name: Install vagrant/libvirt from org action
+        id: libvirt
+        uses: sudoblockio-new/sb-actions/actions/vagrant-libvirt-install@v1
+        with:
+          vagrant-default-provider: libvirt
+          libvirt-uri: qemu:///system
+
+      - name: Use outputs
+        run: |
+          echo "Vagrant=${{ steps.libvirt.outputs.vagrant-version }}"
+          echo "Libvirt=${{ steps.libvirt.outputs.libvirt-version }}"
